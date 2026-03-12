@@ -42,3 +42,12 @@ class Schedule(Base):
     description = Column(Text)
     start_date = Column(Date)
     end_date = Column(Date)
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String)
+    student_id = Column(String)
+    password = Column(String)
+    role = Column(String)
