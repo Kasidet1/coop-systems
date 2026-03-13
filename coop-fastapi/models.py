@@ -48,6 +48,13 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String)
-    student_id = Column(String)
     password = Column(String)
     role = Column(String)
+
+class LoginLog(Base):
+    __tablename__ = "login_logs"
+
+    log_id = Column(Integer, primary_key=True, index=True)
+    username = Column(String)
+    role = Column(String)
+    login_time = Column(TIMESTAMP)
