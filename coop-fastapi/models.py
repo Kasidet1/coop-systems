@@ -38,6 +38,7 @@ class Company(Base):
     email = Column(String(100))
     phone = Column(String(20))
     address = Column(Text)
+    position = Column(String(200))  # ตำแหน่งที่รับฝึกงาน
     created_at = Column(TIMESTAMP, server_default=func.now())
 
 
@@ -56,6 +57,7 @@ class Notification(Base):
 
     notification_id = Column(Integer, primary_key=True, index=True)
     student_id = Column(String(10), ForeignKey("students.student_id"))
+    teacher_id = Column(Integer, ForeignKey("teachers.teacher_id"), nullable=True)
     title = Column(String(200))
     message = Column(Text)
     is_read = Column(Boolean, default=False)

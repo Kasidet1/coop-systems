@@ -19,6 +19,9 @@ class StudentCreate(BaseModel):
 class StudentResponse(StudentCreate):
     created_at: datetime
 
+    class Config:
+        from_attributes = True
+
 
 # -----------------
 # Teacher
@@ -33,6 +36,10 @@ class TeacherCreate(BaseModel):
 
 class TeacherResponse(TeacherCreate):
     teacher_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 # -----------------
@@ -44,10 +51,15 @@ class CompanyCreate(BaseModel):
     email: str
     phone: str
     address: str
+    position: str
 
 
 class CompanyResponse(CompanyCreate):
     company_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 # -----------------
@@ -56,6 +68,15 @@ class CompanyResponse(CompanyCreate):
 class RequestCreate(BaseModel):
     student_id: str
     company_name: str
+
+
+class RequestResponse(RequestCreate):
+    request_id: int
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 # -----------------
@@ -71,3 +92,6 @@ class ReportCreate(BaseModel):
 class ReportResponse(ReportCreate):
     report_id: int
     submitted_at: datetime
+
+    class Config:
+        from_attributes = True

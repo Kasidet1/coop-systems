@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from database import engine
 import models
 
@@ -18,6 +20,18 @@ app = FastAPI(
     title="Coop System API",
     description="API สำหรับระบบบริหารจัดการสหกิจศึกษา",
     version="1.0.0"
+)
+
+
+# ======================
+# CORS (สำหรับ Frontend)
+# ======================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # อนุญาตทุก origin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
