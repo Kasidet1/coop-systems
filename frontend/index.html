@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+</head>
+
+<body>
+
+    <script>
+
+        // ======================
+        // ตรวจสอบ Token
+        // ======================
+
+        const token = localStorage.getItem("token")
+        const role = localStorage.getItem("role")
+
+        // ถ้าไม่มี token → กลับหน้า login
+        if (!token) {
+            window.location.href = "login.html"
+        }
+
+        // ======================
+        // Redirect ตาม Role
+        // ======================
+
+        if (role === "admin") {
+            window.location.href = "หน้าอาจารย์ผู้ประสานงาน.html"
+        }
+
+        else if (role === "teacher") {
+            window.location.href = "หน้าอาจารย์นิเทศ.html"
+        }
+
+        else if (role === "student") {
+            window.location.href = "หน้านักศึกษา.html"
+        }
+
+        else {
+            // ถ้า role ไม่ถูกต้อง
+            localStorage.clear()
+            window.location.href = "login.html"
+        }
+
+    </script>
+
+</body>
+
+</html>

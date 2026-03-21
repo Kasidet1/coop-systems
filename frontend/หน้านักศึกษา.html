@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสหกิจศึกษา - สำหรับนักศึกษา</title>
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/หน้านักศึกษา.css">
+</head>
+
+<body>
+
+<!-- ================= Sidebar ================= -->
+<nav>
+    <div class="nav-header">
+        <img src="https://img1.pic.in.th/images/648875550_1362060618966045_1995721391745254493_n.jpg"
+            alt="Co-op Logo" class="nav-logo">
+        <h2>ระบบสหกิจศึกษา</h2>
+    </div>
+
+    <ul>
+        <li>
+            <a href="หน้านักศึกษา.html" class="menu-link active">
+                🏠 หน้าหลัก
+            </a>
+        </li>
+        <li>🧍🏻จัดการข้อมูล</li>
+        <li>📝 บันทึกรายวัน</li>
+        <li>📂 ส่งเอกสาร/รายงาน</li>
+        <li>📅 ตารางกิจกรรม</li>
+        <li>💬 ติดต่ออาจารย์นิเทศ</li>
+    </ul>
+
+    <div class="nav-footer">
+        <li id="logoutBtn">🚪 ออกจากระบบ</li>
+    </div>
+</nav>
+
+<!-- ================= Main ================= -->
+<main>
+
+    <!-- Header -->
+    <header>
+        <div style="text-align: right;">
+            <strong id="studentName">student</strong><br>
+            <span style="background: #f8d7da; color: #800000; padding: 2px 10px; border-radius: 10px; font-size: 0.8em; font-weight: 600;">
+                นักศึกษาสหกิจ
+            </span>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Company Section -->
+        <div class="card" style="margin-bottom: 25px; border-left: 5px solid orange;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                
+                <div>
+                    <h3 style="margin: 0; color: #333;">จัดการสถานประกอบการ</h3>
+                    <p style="margin: 5px 0 0; color: #666; font-size: 0.9em;">
+                        คุณสามารถค้นหาข้อมูลบริษัทและยื่นคำร้องขอฝึกงานได้ที่นี่
+                    </p>
+                </div>
+
+                <div>
+                    <a href="หน้าค้นหาสถานประกอบการณ์.html" class="btn-outline">
+                        🔍 เลือกสถานประกอบการ
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= GRID ================= -->
+        <div class="grid">
+
+            <!-- LEFT: Upload -->
+            <div class="card upload-card">
+                <h3 class="card-title">📂 ส่งเอกสาร / รายงาน</h3>
+
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileUpload">
+
+                    <div class="upload-content">
+                        <div class="upload-icon">📂</div>
+                        <p>
+                            ลากไฟล์มาวาง หรือ <span>คลิกเลือกไฟล์</span>
+                        </p>
+                        <small>รองรับ PDF, DOCX</small>
+
+                        <p id="fileName">ยังไม่ได้เลือกไฟล์</p>
+                    </div>
+                </div>
+
+                <button class="btn-primary">อัปโหลดไฟล์</button>
+            </div>
+
+            <!-- RIGHT: Company -->
+            <div class="card company-card">
+                <h3 class="card-title">🏢 ข้อมูลสถานประกอบการ</h3>
+
+                <div class="company-main">
+                    <div class="company-icon">🏢</div>
+                    <div>
+                        <div class="company-name">บริษัท เทคโนโลยีล้ำสมัย จำกัด</div>
+                        <div class="company-sub">สถานที่ฝึกงานของคุณ</div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="company-status success">
+                    ✔ ได้รับการอนุมัติแล้ว
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</main>
+
+<!-- ================= Script ================= -->
+<script>
+
+// ================= 🔒 CHECK TOKEN =================
+const token = localStorage.getItem("token");
+if (!token) window.location.href = "login.html";
+
+// ================= 🚪 LOGOUT =================
+document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+});
+
+// ================= 🔐 AUTH FETCH =================
+function authFetch(url, options = {}) {
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...options.headers,
+            "Authorization": "Bearer " + localStorage.getItem("token")
+        }
+    }).then(res => {
+        if (res.status === 401) {
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+        }
+        return res;
+    });
+}
+
+// ================= 👤 LOAD USER =================
+async function loadUser() {
+    try {
+        const res = await authFetch("http://localhost:8000/students/me");
+        const data = await res.json();
+        const nameEl = document.getElementById("studentName");
+        nameEl.textContent = (data.first_name && data.first_name !== "student")
+            ? data.first_name + " " + data.last_name
+            : "student";
+    } catch (err) {
+        console.error(err);
+        document.getElementById("studentName").textContent = "student";
+    }
+}
+loadUser();
+
+// ================= 📂 UPLOAD =================
+const uploadArea = document.getElementById("uploadArea");
+const fileInput = document.getElementById("fileUpload");
+const fileName = document.getElementById("fileName");
+const uploadBtn = document.querySelector(".btn-primary");
+
+fileInput.addEventListener("change", () => {
+    if (fileInput.files.length > 0) fileName.textContent = "📄 " + fileInput.files[0].name;
+});
+
+uploadArea.addEventListener("dragover", e => { e.preventDefault(); uploadArea.classList.add("dragover"); });
+uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+uploadArea.addEventListener("drop", e => {
+    e.preventDefault();
+    uploadArea.classList.remove("dragover");
+    fileInput.files = e.dataTransfer.files;
+    fileName.textContent = "📄 " + e.dataTransfer.files[0].name;
+});
+
+uploadBtn.addEventListener("click", async () => {
+    const files = fileInput.files;
+    if (!files || files.length === 0) { alert("กรุณาเลือกไฟล์ก่อนอัปโหลด"); return; }
+
+    const title = files[0].name;
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("file", files[0]);
+
+    try {
+        const res = await authFetch("http://127.0.0.1:8000/documents/upload", { method: "POST", body: formData });
+        if (!res.ok) { alert("อัปโหลดไฟล์ไม่สำเร็จ"); return; }
+        const data = await res.json();
+        alert("อัปโหลดสำเร็จ: " + data.data.title);
+
+        fileInput.value = "";
+        fileName.textContent = "ยังไม่ได้เลือกไฟล์";
+
+        loadDocuments();
+    } catch (err) {
+        console.error(err);
+        alert("เกิดข้อผิดพลาดในการอัปโหลดไฟล์");
+    }
+});
+
+// ================= 📄 LOAD DOCUMENTS =================
+const documentsContainer = document.getElementById("documentsContainer");
+
+async function loadDocuments() {
+    try {
+        const res = await authFetch("http://127.0.0.1:8000/documents/");
+        const docs = await res.json();
+        documentsContainer.innerHTML = "";
+
+        if (!docs || docs.length === 0) {
+            documentsContainer.innerHTML = `<p style="text-align:center;color:#888;">📭 ยังไม่มีเอกสาร</p>`;
+            return;
+        }
+
+        docs.forEach(doc => {
+            const docRow = document.createElement("div");
+            docRow.className = "table-row";
+            docRow.style.display = "flex";
+            docRow.style.justifyContent = "space-between";
+            docRow.style.marginTop = "10px";
+
+            docRow.innerHTML = `
+                <span>📄 ${doc.title}</span>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-download">⬇️</button>
+                    <button class="btn-delete">❌</button>
+                </div>
+            `;
+
+            docRow.querySelector(".btn-download").addEventListener("click", () => {
+                window.open("http://127.0.0.1:8000/" + doc.file_url, "_blank");
+            });
+
+            docRow.querySelector(".btn-delete").addEventListener("click", async () => {
+                if (confirm("คุณต้องการลบเอกสารนี้ใช่หรือไม่?")) {
+                    try {
+                        const delRes = await authFetch(`http://127.0.0.1:8000/documents/${doc.document_id}`, { method: "DELETE" });
+                        const delData = await delRes.json();
+                        alert(delData.message);
+                        loadDocuments();
+                    } catch (err) {
+                        console.error(err);
+                        alert("ลบเอกสารไม่สำเร็จ");
+                    }
+                }
+            });
+
+            documentsContainer.appendChild(docRow);
+        });
+
+    } catch (err) {
+        console.error(err);
+        documentsContainer.innerHTML = `<p style="text-align:center;color:red;">เกิดข้อผิดพลาดในการโหลดเอกสาร</p>`;
+    }
+}
+loadDocuments();
+
+// ================= 👔 LOAD APPROVED COMPANIES =================
+const companyCard = document.querySelector(".company-card");
+
+async function loadApprovedCompanies() {
+    try {
+        const res = await authFetch("http://127.0.0.1:8000/requests/");
+        const requests = await res.json();
+
+        // กรองเฉพาะ status = "อนุมัติ"
+        const approved = requests.filter(r => r.status === "อนุมัติ");
+
+        if (approved.length === 0) {
+            companyCard.innerHTML = `
+                <h3 class="card-title">🏢 ข้อมูลสถานประกอบการ</h3>
+                <p style="text-align:center;color:#888;">📭 ยังไม่มีบริษัทที่อนุมัติ</p>
+            `;
+            return;
+        }
+
+        // สร้าง HTML
+        companyCard.innerHTML = `<h3 class="card-title">🏢 ข้อมูลสถานประกอบการ</h3>`;
+
+        approved.forEach(r => {
+            const div = document.createElement("div");
+            div.className = "company-main";
+            div.style.display = "flex";
+            div.style.flexDirection = "column";
+            div.style.border = "1px solid #ccc";
+            div.style.borderRadius = "8px";
+            div.style.padding = "10px";
+            div.style.marginBottom = "10px";
+
+            div.innerHTML = `
+                <div style="display:flex; align-items:center; margin-bottom:5px;">
+                    <div class="company-icon">🏢</div>
+                    <div style="margin-left:10px;">
+                        <div class="company-name" style="font-weight:600; font-size:1.1em;">${r.company_name}</div>
+                        <div class="company-sub">ผู้ติดต่อ: ${r.contact_person || "-"}</div>
+                    </div>
+                </div>
+                <div style="font-size:0.9em; color:#555; margin-bottom:3px;">Email: ${r.email || "-"}</div>
+                <div style="font-size:0.9em; color:#555; margin-bottom:3px;">โทร: ${r.phone || "-"}</div>
+                <div style="font-size:0.9em; color:#555;">ที่อยู่: ${r.address || "-"}</div>
+                <div class="company-status success" style="margin-top:5px;">✔ ได้รับการอนุมัติแล้ว</div>
+            `;
+
+            companyCard.appendChild(div);
+        });
+
+    } catch (err) {
+        console.error(err);
+        companyCard.innerHTML = `<p style="text-align:center;color:red;">เกิดข้อผิดพลาดในการโหลดบริษัท</p>`;
+    }
+}
+
+// โหลดตอนเริ่มต้น
+loadApprovedCompanies();
+
+</script>
+
+
+</body>
+</html>

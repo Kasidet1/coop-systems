@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime
 from database import get_db
 import models
 import schemas
+from dependencies import get_current_user
 
 router = APIRouter(
     prefix="/companies",
@@ -11,10 +12,12 @@ router = APIRouter(
 )
 
 # ======================
-# ดูบริษัททั้งหมด
+# ดูบริษัททั้งหมด (ทุกคนดูได้)
 # ======================
 @router.get("/")
-def get_companies(db: Session = Depends(get_db)):
+def get_companies(
+    db: Session = Depends(get_db)
+):
     return db.query(models.Company).all()
 
 
@@ -24,12 +27,12 @@ def get_companies(db: Session = Depends(get_db)):
 @router.post("/")
 def create_company(
     company: schemas.CompanyCreate,
-    role: str = Query(...),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
-    if role != "teacher":
-        return {"error": "Only teacher can add company"}
+    if current_user["role"] != "admin":
+        return {"error": "Permission denied"}
 
     new_company = models.Company(
         company_name=company.company_name,
@@ -55,12 +58,12 @@ def create_company(
 def update_company(
     company_id: int,
     company: schemas.CompanyCreate,
-    role: str = Query(...),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
-    if role != "teacher":
-        return {"error": "Only teacher can update company"}
+    if current_user["role"] != "admin":
+        return {"error": "Only admin can update company"}
 
     db_company = db.query(models.Company).filter(
         models.Company.company_id == company_id
@@ -88,12 +91,12 @@ def update_company(
 @router.delete("/{company_id}")
 def delete_company(
     company_id: int,
-    role: str = Query(...),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
-    if role != "teacher":
-        return {"error": "Only teacher can delete company"}
+    if current_user["role"] != "admin":
+        return {"error": "Only admin can delete company"}
 
     db_company = db.query(models.Company).filter(
         models.Company.company_id == company_id

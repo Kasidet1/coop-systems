@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - Cooperative Education System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+
+<body>
+
+    <div class="login-card">
+
+        <img src="mylogo.png" class="login-logo"
+            onerror="this.src='https://cdn-icons-png.flaticon.com/512/1041/1041916.png'">
+
+        <h2>เข้าสู่ระบบสหกิจศึกษา</h2>
+
+        <form id="loginForm">
+
+            <div class="input-group">
+                <label>ชื่อผู้ใช้งาน (Username)</label>
+                <input type="text" id="username" required>
+            </div>
+
+            <div class="input-group">
+                <label>รหัสผ่าน (Password)</label>
+                <input type="password" id="password" required>
+            </div>
+
+            <p id="errorLabel" class="error-msg"></p>
+
+            <button type="submit" class="btn-login" id="loginBtn">
+                เข้าสู่ระบบ
+            </button>
+
+        </form>
+
+        <p style="margin-top:20px;color:#888;font-size:0.8em">
+            หากลืมรหัสผ่าน กรุณาติดต่อเจ้าหน้าที่คณะ
+        </p>
+
+    </div>
+
+
+    <script>
+
+        if (localStorage.getItem("token")) {
+            window.location.href = "index.html"
+        }
+
+        document.getElementById("username").addEventListener("input", () => {
+            document.getElementById("errorLabel").style.display = "none"
+        })
+
+        document.getElementById("password").addEventListener("input", () => {
+            document.getElementById("errorLabel").style.display = "none"
+        })
+
+        document.getElementById("loginForm").addEventListener("submit", async function (e) {
+
+            e.preventDefault()
+
+            const btn = document.getElementById("loginBtn")
+            btn.disabled = true
+            btn.innerText = "กำลังเข้าสู่ระบบ..."
+
+            const username = document.getElementById("username").value.trim()
+            const password = document.getElementById("password").value.trim()
+
+            try {
+
+                const response = await fetch("http://127.0.0.1:8000/auth/login", {
+
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+
+                })
+
+                const data = await response.json()
+
+                if (response.ok) {
+
+                    localStorage.setItem("token", data.access_token)
+                    localStorage.setItem("role", data.role)
+
+                    window.location.href = "index.html"
+
+                } else {
+
+                    document.getElementById("errorLabel").innerText =
+                        Array.isArray(data.detail)
+                            ? data.detail.map(e => e.msg).join(", ")
+                            : data.detail
+
+                    document.getElementById("errorLabel").style.display = "block"
+
+                }
+
+            } catch (err) {
+
+                document.getElementById("errorLabel").innerText = "ไม่สามารถเชื่อมต่อ Server ได้"
+                document.getElementById("errorLabel").style.display = "block"
+
+            }
+
+            btn.disabled = false
+            btn.innerText = "เข้าสู่ระบบ"
+
+        })
+
+    </script>
+
+</body>
+
+</html>

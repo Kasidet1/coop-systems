@@ -1,0 +1,251 @@
+:root {
+    --primary-gradient: linear-gradient(135deg, #800000 0%, #4a0000 100%);
+    --secondary-maroon: #a52a2a;
+    --soft-maroon: #f8d7da;
+    --dark-text: #2d3436;
+    --white: #ffffff;
+    --success: #00b894;
+    --warning: #fdcb6e;
+    --danger: #d63031;
+    --btn-hover: #660000;
+}
+
+body{
+    font-family: 'Sarabun', sans-serif;
+    background-color:#f8f9fa;
+    margin:0;
+    color:var(--dark-text);
+    display:flex;
+    height:100vh;
+    overflow:hidden;
+}
+
+/* Sidebar */
+nav{
+    width:280px;
+    background:var(--primary-gradient);
+    color:white;
+    display:flex;
+    flex-direction:column;
+    padding:30px 20px;
+    box-shadow:4px 0 10px rgba(0,0,0,0.1);
+}
+
+.nav-header{
+    text-align:center;
+    margin-bottom:30px;
+}
+
+.nav-logo{
+    width:90px;
+    height:90px;
+    background:white;
+    border-radius:50%;
+    margin:0 auto 15px;
+    display:block;
+    object-fit:cover;
+    box-shadow:0 4px 15px rgba(0,0,0,0.2);
+    border:3px solid rgba(255,255,255,0.3);
+}
+
+nav h3{
+    font-weight:600;
+    letter-spacing:1px;
+    margin-bottom:20px;
+    border-bottom:1px solid rgba(255,255,255,0.2);
+    padding-bottom:10px;
+}
+
+nav ul{
+    list-style:none;
+    padding:0;
+    margin:0;
+}
+
+nav li{
+    padding:12px 15px;
+    margin-bottom:8px;
+    border-radius:12px;
+    transition:all .3s ease;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+nav li:hover{
+    background:rgba(255,255,255,0.2);
+    transform:translateX(8px);
+}
+
+/* Main */
+main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+}
+
+/* Header */
+header{
+    background:white;
+    padding:15px 40px;
+    display:flex;
+    justify-content:flex-end; /* ✅ ชิดขวา */
+    align-items:center;
+    box-shadow:0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* User Info (ชื่อ + บทบาท) */
+.user-info{
+    display:flex;
+    flex-direction:column;
+    align-items:center; /* ✅ ชื่ออยู่กลาง */
+}
+
+.user-info h3{
+    margin:0;
+    font-size:15px;
+    font-weight:600;
+}
+
+/* Role Box (ครอบทั้ง บทบาท + ข้อความ) */
+.role-box{
+    margin-top:6px;
+    padding:5px 14px;
+    border-radius:999px;
+    font-size:12px;
+
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+
+    background:linear-gradient(135deg, #fdeaea, #f8d7da);
+    color:#850000;
+    border:none;
+}
+
+/* Container */
+.container{
+    padding:30px 40px;
+}
+
+/* Grid */
+.grid-container{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:25px;
+}
+
+/* Card */
+.card{
+    background:white;
+    border-radius:20px;
+    padding:25px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.05);
+    border:1px solid rgba(0,0,0,0.03);
+}
+
+.card-title{
+    margin-top:0;
+    color:#800000;
+}
+
+/* Chart */
+.chart-area{
+    height:220px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-around;
+    padding:20px 0;
+    border-bottom:2px solid #f1f1f1;
+    background:linear-gradient(to top,#fafafa,transparent);
+    border-radius:10px;
+}
+
+.bar{
+    width:60px;
+    border-radius:10px 10px 0 0;
+}
+
+.bar-success{
+    background:var(--success);
+}
+
+.bar-warning{
+    background:var(--warning);
+}
+
+.bar-danger{
+    background:var(--danger);
+}
+
+/* Table */
+.table-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px;
+    margin-top:12px;
+    border-radius:15px;
+    background:white;
+    border:1px solid #f1f1f1;
+    transition:.3s;
+}
+
+.table-row:hover{
+    transform:translateY(-3px);
+    box-shadow:0 8px 20px rgba(0,0,0,0.08);
+}
+
+/* Status Pill */
+.status-pill{
+    padding:6px 14px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:600;
+    display:inline-block;
+}
+
+/* Status Colors */
+.status-approved{
+    background:#28a745;
+    color:white;
+}
+
+.status-pending{
+    background:#ffe083;
+    color:#000000;
+}
+
+.status-rejected{
+    background:#dc3545;
+    color:white;
+}
+
+/* Button */
+.btn-action{
+    background:var(--primary-gradient);
+    color:white;
+    border:none;
+    padding:10px 20px;
+    border-radius:10px;
+    cursor:pointer;
+    font-family:'Sarabun', sans-serif;
+    font-size:.9em;
+    transition:.3s;
+}
+
+.btn-action:hover{
+    background:var(--btn-hover);
+    box-shadow:0 5px 15px rgba(128,0,0,0.3);
+}
+
+/* Download icon */
+.download-icon{
+    border:none;
+    background:none;
+    color:#800000;
+    cursor:pointer;
+    font-size:1.2em;
+}

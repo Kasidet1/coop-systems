@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ค้นหาสถานประกอบการ</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/หน้าค้นหาสถานประกอบการณ์.css">
+    <style>
+        /* ตัวอย่าง CSS สำหรับ search bar */
+        .search-container {
+            display: flex;
+            justify-content: flex-end;
+            margin: 10px 20px;
+        }
+
+        .search-container input {
+            padding: 6px 10px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            width: 250px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="full-page-card">
+
+    <!-- Header -->
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h2>สถานประกอบการที่เปิดรับ</h2>
+            <p>เลือกบริษัทที่ตรงกับความสนใจของคุณเพื่อเริ่มต้นสหกิจศึกษา</p>
+        </div>
+        <!-- 🔍 Search -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="ค้นหาบริษัท...">
+        </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="company-grid" id="companyGrid">
+        <!-- Card จะถูกสร้างด้วย JS -->
+    </div>
+</div>
+
+<script>
+// ================= 🔒 CHECK TOKEN =================
+const token = localStorage.getItem("token");
+if (!token) window.location.href = "login.html";
+
+// ✅ ดึง role จาก localStorage เลย (แก้ตรงนี้)
+let currentUserRole = localStorage.getItem("role") || "student";
+
+// ================= 🔐 AUTH FETCH =================
+async function authFetch(url, options = {}) {
+    const res = await fetch(url, {
+        ...options,
+        headers: {
+            ...options.headers,
+            "Authorization": "Bearer " + token
+        }
+    });
+
+    if (res.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        window.location.href = "login.html";
+    }
+    return res;
+}
+
+// ================= 👥 LOAD COMPANIES =================
+let allCompanies = [];
+const grid = document.getElementById("companyGrid");
+
+async function loadCompanies() {
+
+    grid.innerHTML = "";
+
+    try {
+        const res = await authFetch("http://localhost:8000/companies/");
+        allCompanies = await res.json();
+
+        renderCompanies(allCompanies);
+
+    } catch (err) {
+        console.error(err);
+        grid.innerHTML = `<p style="color:red;">โหลดข้อมูลบริษัทไม่สำเร็จ</p>`;
+    }
+}
+
+// ================= 📝 Render Companies =================
+function renderCompanies(companies) {
+    grid.innerHTML = "";
+
+    if (companies.length === 0) {
+        grid.innerHTML = "<p>ไม่พบสถานประกอบการ</p>";
+        return;
+    }
+
+    companies.forEach(c => {
+        const card = document.createElement("div");
+        card.className = "company-card";
+
+        card.innerHTML = `
+            <strong class="company-name">${c.company_name}</strong>
+            <p>ผู้ติดต่อ: ${c.contact_person}</p>
+            <p>Email: ${c.email}</p>
+            <p>เบอร์โทร: ${c.phone}</p>
+            <p>ที่อยู่: ${c.address}</p>
+            <div class="card-btn">
+                <button class="btn-primary">
+                    ${currentUserRole === "admin" ? "ดูรายละเอียด" : "สมัคร"}
+                </button>
+            </div>
+        `;
+
+        const btn = card.querySelector("button");
+
+        btn.addEventListener("click", async () => {
+
+            // ✅ ADMIN
+            if (currentUserRole === "admin") {
+                window.location.href = `company_detail.html?id=${c.company_id}`;
+                return;
+            }
+
+            // ✅ STUDENT
+            try {
+                const res = await authFetch("http://localhost:8000/requests/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ company_id: c.company_id })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert(`สมัครเรียบร้อย: ${data.company_name}`);
+                } else {
+                    alert(`เกิดข้อผิดพลาด: ${data.detail}`);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("เกิดข้อผิดพลาดในการสมัคร");
+            }
+        });
+
+        grid.appendChild(card);
+    });
+}
+
+// ================= 🔎 SEARCH =================
+const searchInput = document.getElementById("searchInput");
+searchInput.addEventListener("input", () => {
+    const query = searchInput.value.toLowerCase();
+    const filtered = allCompanies.filter(c => 
+        c.company_name.toLowerCase().includes(query)
+    );
+    renderCompanies(filtered);
+});
+
+// ================= 🚀 START =================
+loadCompanies();
+</script>
+
+</body>
+</html>

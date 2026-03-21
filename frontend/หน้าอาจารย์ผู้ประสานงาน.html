@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสหกิจศึกษา - Cooperative Education System</title>
+
+    <link rel="stylesheet" href="css/หน้าอาจารย์ผู้ประสานงาน.css">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<nav>
+    <div class="nav-header" style="text-align: center;">
+        <img id="navLogo" src="https://img1.pic.in.th/images/648875550_1362060618966045_1995721391745254493_n.jpg"
+            alt="Co-op Logo" class="nav-logo">
+        <h2 style="margin: 0; font-size: 1.2em;">ระบบสหกิจศึกษา</h2>
+    </div>
+
+        <h3>เมนูการใช้งาน</h3>
+        <ul>
+            <li><a href="หน้าอาจารย์ผู้ประสานงาน.html" style="color:white;text-decoration:none;">🏠 หน้าหลัก </a></li>
+            <li>👥 จัดการข้อมูลพื้นฐาน</li>
+            <li><a href="หน้าค้นหาสถานประกอบการณ์.html" style="color:white;text-decoration:none;">🏢 จัดการข้อมูลสถานที่ประกอบการ </a></li>
+            <li>✅ อนุมัติคำร้อง</li>
+            <li>📅 ปฏิทินกิจกรรม</li>
+            <li>🔑 จัดการสิทธิ์ผู้ใช้</li>
+            <li>📄 จัดการเอกสาร</li>
+            <li>📊 รายงาน</li>
+        </ul>
+
+        <div style="margin-top:auto;padding-top:20px;border-top:1px solid rgba(255,255,255,0.2);">
+            <li onclick="logout()">🚪 ออกจากระบบ</li>
+        </div>
+    </nav>
+
+    <main>
+        <header>
+            <div class="user-info">
+                <h3 id="teacherName" style="margin:0; font-size:15px;">Loading...</h3>
+                <div class="role-box">
+                    <span style="font-weight:600;">บทบาท:</span>
+                    <span>อาจารย์ผู้ประสานงานรายวิชา</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="grid-container">
+
+                <!-- Card สถิติ -->
+                <div class="card">
+                    <h3 class="card-title">สถิติผลการตอบรับจากสถานประกอบการ</h3>
+                    <div class="chart-area">
+                        <div id="approvedBar" class="bar bar-success"></div>
+                        <div id="pendingBar" class="bar bar-warning"></div>
+                        <div id="rejectedBar" class="bar bar-danger"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-around;margin-top:20px;font-weight:600;">
+                        <span id="approvedText" style="color:var(--success);">● อนุมัติ: 0%</span>
+                        <span id="pendingText" style="color:var(--warning);">● รออนุมัติ: 0%</span>
+                        <span id="rejectedText" style="color:var(--danger);">● ไม่ผ่าน: 0%</span>
+                    </div>
+                </div>
+
+                <!-- Card เอกสารด่วน -->
+                <div class="card">
+                    <h3 class="card-title">จัดการเอกสารด่วน</h3>
+                    <div class="table-row">
+                        <span>📄 คู่มือสหกิจศึกษา.pdf</span>
+                        <button class="download-icon">⬇️</button>
+                    </div>
+                    <div class="table-row">
+                        <span>📁 แบบฟอร์มขอฝึกงาน.docx</span>
+                        <button class="download-icon">⬇️</button>
+                    </div>
+                    <div class="table-row">
+                        <span>📝 ปฏิทินวันนิเทศ.pdf</span>
+                        <button class="download-icon">⬇️</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card คำร้องล่าสุด -->
+            <div class="card" style="margin-top:25px;">
+                <h3 class="card-title">รายการคำร้องเลือกสถานประกอบการล่าสุด</h3>
+                <div id="latestRequests"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ======================
+        // เช็ค token ถ้าไม่มี → redirect ไป login
+        // ======================
+        const token = localStorage.getItem("token");
+        if (!token) {
+            window.location.href = "login.html";
+        }
+
+        // ======================
+        // Logout
+        // ======================
+        function logout() {
+            localStorage.removeItem("token");
+            localStorage.removeItem("role");
+            window.location.href = "login.html";
+        }
+
+        // ======================
+        // ตรวจสอบ response 401 → redirect login
+        // ======================
+        async function authFetch(url, options = {}) {
+            options.headers = options.headers || {};
+            options.headers["Authorization"] = "Bearer " + token;
+
+            const res = await fetch(url, options);
+            if (res.status === 401) { // Token หมดอายุ / invalid
+                logout();
+                return;
+            }
+            return res;
+        }
+
+        // ======================
+        // โหลดชื่อผู้ใช้
+        // ======================
+        async function loadUserName() {
+            try {
+                const res = await authFetch("http://127.0.0.1:8000/teachers/me");
+                if (!res) return;
+                const data = await res.json();
+                let name = "Admin";
+                if (data.first_name && data.last_name) {
+                    name = data.first_name + " " + data.last_name;
+                }
+                document.getElementById("teacherName").innerText = name;
+            } catch {
+                document.getElementById("teacherName").innerText = "Admin";
+            }
+        }
+        loadUserName();
+
+        // ======================
+        // โหลดสถิติ Dashboard
+        // ======================
+        async function loadStats() {
+            try {
+                const res = await authFetch("http://127.0.0.1:8000/requests/stats");
+                if (!res) return;
+                const data = await res.json();
+
+                const total = data.total || 1;
+                const approvedPercent = Math.round((data.approved / total) * 100);
+                const pendingPercent = Math.round((data.pending / total) * 100);
+                const rejectedPercent = Math.round((data.rejected / total) * 100);
+
+                document.getElementById("approvedBar").style.height = approvedPercent + "%";
+                document.getElementById("pendingBar").style.height = pendingPercent + "%";
+                document.getElementById("rejectedBar").style.height = rejectedPercent + "%";
+
+                document.getElementById("approvedText").innerText = "● อนุมัติ: " + approvedPercent + "%";
+                document.getElementById("pendingText").innerText = "● รออนุมัติ: " + pendingPercent + "%";
+                document.getElementById("rejectedText").innerText = "● ไม่ผ่าน: " + rejectedPercent + "%";
+
+            } catch (err) {
+                console.log(err);
+            }
+        }
+        loadStats();
+
+        // ======================
+        // โหลดคำร้องล่าสุด
+        // ======================
+        async function loadLatestRequests() {
+            try {
+                const res = await authFetch("http://127.0.0.1:8000/requests/latest");
+                if (!res) return;
+                const data = await res.json();
+                const container = document.getElementById("latestRequests");
+                container.innerHTML = "";
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<div style="padding:25px;text-align:center;color:#888;">📭 ยังไม่มีคำร้องเลือกสถานประกอบการ</div>`;
+                    return;
+                }
+
+                data.forEach(req => {
+                    let statusClass = "";
+                    let statusText = req.status;
+
+                    if (req.status === "อนุมัติ") statusClass = "status-approved";
+                    else if (req.status === "รอการอนุมัติ") statusClass = "status-pending";
+                    else if (req.status === "ไม่อนุมัติ" || req.status === "ไม่ผ่าน") {
+                        statusClass = "status-rejected";
+                        statusText = "ไม่ผ่าน";
+                    }
+
+                    container.innerHTML += `
+<div class="table-row">
+    <div>
+        <strong style="font-size:1.1em;">${req.student_name}</strong><br>
+        <span style="color:#666;">${req.company_name}</span>
+    </div>
+    <div style="display:flex;gap:15px;align-items:center;">
+        <span class="status-pill ${statusClass}">${statusText}</span>
+    </div>
+</div>`;
+                });
+
+            } catch (err) {
+                console.log(err);
+            }
+        }
+        loadLatestRequests();
+    </script>
+
+</body>
+</html>

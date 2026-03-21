@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime
 from database import get_db
 import models
 import schemas
+from dependencies import get_current_user
 
 router = APIRouter(
     prefix="/students",
@@ -11,78 +11,85 @@ router = APIRouter(
 )
 
 # ======================
-# ดูข้อมูลนักศึกษา
+# ดูข้อมูลตัวเอง (Student)
 # ======================
-@router.get("/")
-def get_students(
-    role: str = Query(...),
-    student_id: str = Query(None),
+@router.get("/me", response_model=schemas.StudentResponse)
+def get_my_profile(
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    student = db.query(models.Student).filter(
+        models.Student.student_id == current_user["username"]
+    ).first()
 
-    # อาจารย์ดูได้ทั้งหมด
-    if role == "teacher":
-        return db.query(models.Student).all()
+    if not student:
+        return {
+            "student_id": current_user["username"],
+            "first_name": "student",
+            "last_name": "",
+            "email": "",
+            "phone": "",
+            "faculty": "",
+            "major": "",
+            "year": None,
+            "status": "รอนิเทศ",
+            "company_name": None,
+            "week": None
+        }
 
-    # นักศึกษาดูเฉพาะตัวเอง
-    elif role == "student":
-        return db.query(models.Student).filter(
-            models.Student.student_id == student_id
-        ).first()
-
-    return {"error": "invalid role"}
-
+    return student
 
 # ======================
-# เพิ่มนักศึกษา
+# ดูนักศึกษาทั้งหมด (Admin / Teacher) เฉพาะนักศึกษาที่ company_name ไม่ใช่ None
 # ======================
-@router.post("/")
-def create_student(
-    student: schemas.StudentCreate,
+@router.get("/all", response_model=list[schemas.StudentResponse])
+def get_all_students(
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
-    new_student = models.Student(
-        student_id=student.student_id,
-        first_name=student.first_name,
-        last_name=student.last_name,
-        email=student.email,
-        phone=student.phone,
-        faculty=student.faculty,
-        major=student.major,
-        year=student.year,
-        created_at=datetime.now()
-    )
-
-    db.add(new_student)
-    db.commit()
-    db.refresh(new_student)
-
-    return new_student
-
+    if current_user["role"] not in ["teacher", "admin"]:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    # Filter เฉพาะนักศึกษาที่ admin อนุมัติ company_name แล้ว
+    students = db.query(models.Student).filter(models.Student.company_name != None).all()
+    return students
 
 # ======================
-# แก้ไขข้อมูลนักศึกษา
+# ดูนักศึกษารายคน
 # ======================
-@router.put("/{student_id}")
+@router.get("/{student_id}", response_model=schemas.StudentResponse)
+def get_student_by_id(
+    student_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    student = db.query(models.Student).filter(
+        models.Student.student_id == student_id
+    ).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+# ======================
+# แก้ไขข้อมูลนักศึกษา (เฉพาะ Student)
+# ======================
+@router.put("/{student_id}", response_model=schemas.StudentResponse)
 def update_student(
     student_id: str,
     student: schemas.StudentCreate,
-    role: str = Query(...),
-    login_student_id: str = Query(None),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
     db_student = db.query(models.Student).filter(
         models.Student.student_id == student_id
     ).first()
-
     if not db_student:
-        return {"error": "Student not found"}
+        raise HTTPException(status_code=404, detail="Student not found")
 
-    # student แก้ได้เฉพาะของตัวเอง
-    if role == "student" and student_id != login_student_id:
-        return {"error": "Permission denied"}
+    if current_user["role"] != "student":
+        raise HTTPException(status_code=403, detail="Only student can update profile")
+    if student_id != current_user["username"]:
+        raise HTTPException(status_code=403, detail="You can update only your profile")
 
     db_student.first_name = student.first_name
     db_student.last_name = student.last_name
@@ -94,33 +101,53 @@ def update_student(
 
     db.commit()
     db.refresh(db_student)
-
     return db_student
 
-
 # ======================
-# ลบนักศึกษา
+# ลบข้อมูลนักศึกษา (เฉพาะ Student)
 # ======================
 @router.delete("/{student_id}")
 def delete_student(
     student_id: str,
-    role: str = Query(...),
-    login_student_id: str = Query(None),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    db_student = db.query(models.Student).filter(
+        models.Student.student_id == student_id
+    ).first()
+    if not db_student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    if current_user["role"] != "student":
+        raise HTTPException(status_code=403, detail="Only student can delete profile")
+    if student_id != current_user["username"]:
+        raise HTTPException(status_code=403, detail="You can delete only your profile")
+
+    db.delete(db_student)
+    db.commit()
+    return {"message": "Student deleted successfully"}
+
+# ======================
+# Teacher / Admin อัปเดตสถานะนิเทศ
+# ======================
+@router.put("/{student_id}/status", response_model=schemas.StudentResponse)
+def update_internship_status(
+    student_id: str,
+    status: schemas.InternshipStatusUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user["role"] not in ["teacher", "admin"]:
+        raise HTTPException(status_code=403, detail="Only teacher/admin can update status")
 
     db_student = db.query(models.Student).filter(
         models.Student.student_id == student_id
     ).first()
-
     if not db_student:
-        return {"error": "Student not found"}
+        raise HTTPException(status_code=404, detail="Student not found")
 
-    # student ลบได้เฉพาะตัวเอง
-    if role == "student" and student_id != login_student_id:
-        return {"error": "Permission denied"}
-
-    db.delete(db_student)
+    db_student.status = status.status
     db.commit()
+    db.refresh(db_student)
 
-    return {"message": "Student deleted successfully"}
+    return db_student

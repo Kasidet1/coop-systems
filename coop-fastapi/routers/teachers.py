@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
 import models
 import schemas
-from datetime import datetime
+from dependencies import get_current_user
 
 router = APIRouter(
     prefix="/teachers",
@@ -11,62 +11,60 @@ router = APIRouter(
 )
 
 # ======================
-# ดูอาจารย์ทั้งหมด
+# ดูข้อมูลอาจารย์
 # ======================
-@router.get("/")
-def get_teachers(db: Session = Depends(get_db)):
-    return db.query(models.Teacher).all()
+@router.get("/me")
+def get_my_profile(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
 
+    teacher = db.query(models.Teacher).filter(
+        models.Teacher.username == current_user["username"]
+    ).first()
 
-# ======================
-# เพิ่มอาจารย์
-# ======================
-@router.post("/")
-def create_teacher(teacher: schemas.TeacherCreate, db: Session = Depends(get_db)):
+    if not teacher:
+        return {"message": "Profile not created"}
 
-    new_teacher = models.Teacher(
-        first_name=teacher.first_name,
-        last_name=teacher.last_name,
-        email=teacher.email,
-        phone=teacher.phone,
-        faculty=teacher.faculty,
-        created_at=datetime.now()
-    )
-
-    db.add(new_teacher)
-    db.commit()
-    db.refresh(new_teacher)
-
-    return new_teacher
+    return teacher
 
 
 # ======================
-# แก้ไขข้อมูลอาจารย์ (แก้ได้เฉพาะตัวเอง)
+# เพิ่ม / แก้ข้อมูลตัวเอง
 # ======================
-@router.put("/{teacher_id}")
-def update_teacher(
-    teacher_id: int,
+@router.put("/me")
+def update_my_profile(
     teacher: schemas.TeacherCreate,
-    login_teacher_id: int = Query(...),
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
     db_teacher = db.query(models.Teacher).filter(
-        models.Teacher.teacher_id == teacher_id
+        models.Teacher.username == current_user["username"]
     ).first()
 
+    # ถ้ายังไม่มี → สร้าง
     if not db_teacher:
-        return {"error": "Teacher not found"}
 
-    # เช็คว่าเป็นเจ้าของข้อมูลหรือไม่
-    if teacher_id != login_teacher_id:
-        return {"error": "Permission denied"}
+        db_teacher = models.Teacher(
+            username=current_user["username"],
+            first_name=teacher.first_name,
+            last_name=teacher.last_name,
+            email=teacher.email,
+            phone=teacher.phone,
+            faculty=teacher.faculty
+        )
 
-    db_teacher.first_name = teacher.first_name
-    db_teacher.last_name = teacher.last_name
-    db_teacher.email = teacher.email
-    db_teacher.phone = teacher.phone
-    db_teacher.faculty = teacher.faculty
+        db.add(db_teacher)
+
+    # ถ้ามีแล้ว → update
+    else:
+
+        db_teacher.first_name = teacher.first_name
+        db_teacher.last_name = teacher.last_name
+        db_teacher.email = teacher.email
+        db_teacher.phone = teacher.phone
+        db_teacher.faculty = teacher.faculty
 
     db.commit()
     db.refresh(db_teacher)
@@ -75,27 +73,22 @@ def update_teacher(
 
 
 # ======================
-# ลบอาจารย์ (ลบได้เฉพาะตัวเอง)
+# ลบข้อมูลตัวเอง
 # ======================
-@router.delete("/{teacher_id}")
-def delete_teacher(
-    teacher_id: int,
-    login_teacher_id: int = Query(...),
+@router.delete("/me")
+def delete_my_profile(
+    current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
     db_teacher = db.query(models.Teacher).filter(
-        models.Teacher.teacher_id == teacher_id
+        models.Teacher.username == current_user["username"]
     ).first()
 
     if not db_teacher:
-        return {"error": "Teacher not found"}
-
-    # เช็คสิทธิ์
-    if teacher_id != login_teacher_id:
-        return {"error": "Permission denied"}
+        return {"error": "Profile not found"}
 
     db.delete(db_teacher)
     db.commit()
 
-    return {"message": "Teacher deleted successfully"}
+    return {"message": "Profile deleted successfully"}

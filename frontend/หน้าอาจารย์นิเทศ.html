@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสหกิจศึกษา - สำหรับอาจารย์นิเทศ</title>
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/หน้าอาจารย์นิเทศ.css">
+</head>
+<body>
+
+<nav>
+    <div class="nav-header" style="text-align: center;">
+        <img id="navLogo" src="https://img1.pic.in.th/images/648875550_1362060618966045_1995721391745254493_n.jpg"
+            alt="Co-op Logo" class="nav-logo" style="width:80px; height:80px; border-radius:50%;">
+        <h2 style="margin:0; font-size:1.2em;">ระบบสหกิจศึกษา</h2>
+    </div>
+
+    <h3>เมนูหลัก</h3>
+    <ul>
+        <li><a href="หน้าอาจารย์นิเทศ.html" style="color:white;text-decoration:none;">🏠 หน้าหลัก (Dashboard)</a></li>
+        <li>📍 แผนการนิเทศ</li>
+        <li>📝 บันทึกการนิเทศ</li>
+    </ul>
+
+    <div style="margin-top:auto;padding-top:20px;border-top:1px solid rgba(255,255,255,0.2);">
+        <li onclick="logout()">🚪 ออกจากระบบ</li>
+    </div>
+</nav>
+
+<main>
+    <header>
+        <div class="user-info">
+            <h3 id="teacherName" style="margin:0; font-size:15px;">Loading...</h3>
+            <div class="role-box">
+                <span style="font-weight:600;">บทบาท:</span>
+                <span>อาจารย์นิเทศ</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h4>นักศึกษาทั้งหมด</h4>
+                <div class="value">0 คน</div>
+            </div>
+            <div class="stat-card success">
+                <h4>นิเทศเรียบร้อย</h4>
+                <div class="value">0 คน</div>
+            </div>
+            <div class="stat-card warning">
+                <h4>รอนิเทศ</h4>
+                <div class="value">0 คน</div>
+                <small>กำลังดำเนินการนัดหมาย</small>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">ติดตามความก้าวหน้านักศึกษา</h3>
+                    <input type="text" id="searchInput" placeholder="ค้นหาชื่อ..." class="search-input">
+                </div>
+                <div id="studentList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal แสดงเอกสาร student -->
+    <div id="documentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>เอกสารนักศึกษา</h3>
+            <ul id="documentList"></ul>
+        </div>
+    </div>
+</main>
+
+<script>
+const token = localStorage.getItem("token");
+if (!token) window.location.href = "login.html";
+
+function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    window.location.href = "login.html";
+}
+
+async function authFetch(url, options={}) {
+    options.headers = options.headers || {};
+    options.headers["Authorization"] = "Bearer " + token;
+    const res = await fetch(url, options);
+    if (res.status === 401) { logout(); return; }
+    return res;
+}
+
+let allStudents = [];
+
+// โหลดชื่ออาจารย์
+async function loadUserName() {
+    try {
+        const res = await authFetch("http://127.0.0.1:8000/teachers/me");
+        if (!res) return;
+        const data = await res.json();
+        const name = data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : "teacher";
+        document.getElementById("teacherName").innerText = name;
+    } catch { document.getElementById("teacherName").innerText = "teacher"; }
+}
+loadUserName();
+
+// โหลดนักศึกษาที่อนุมัติแล้ว
+async function loadStudents() {
+    try {
+        const res = await authFetch("http://127.0.0.1:8000/students/all");
+        if (!res) return;
+        const data = await res.json();
+        allStudents = data.filter(s => s.company_name !== null); // เฉพาะนักศึกษาที่มีบริษัท
+        updateStudentDisplay(allStudents);
+        updateStats(allStudents);
+    } catch(err){ console.error(err); }
+}
+
+function updateStats(students) {
+    const total = students.length;
+    const doneCount = students.filter(s => s.status === "นิเทศแล้ว").length;
+    const pendingCount = students.filter(s => s.status === "รอนิเทศ").length;
+
+    document.querySelector(".stat-card .value").innerText = total + " คน";
+    document.querySelector(".stat-card.success .value").innerText = doneCount + " คน";
+    document.querySelector(".stat-card.warning .value").innerText = pendingCount + " คน";
+}
+
+function updateStudentDisplay(students) {
+    const container = document.getElementById("studentList");
+    container.innerHTML = "";
+
+    students.forEach(s => {
+        const company = s.company_name || "-";
+        const phone = s.phone || "-";
+        const status = s.status || "รอนิเทศ";
+
+        const div = document.createElement("div");
+        div.classList.add("student-item");
+        div.innerHTML = `
+            <div>
+                <strong>${s.first_name} ${s.last_name}</strong><br>
+                <small>เบอร์: ${phone} | สถานประกอบการ: ${company}</small>
+            </div>
+            <div class="student-action">
+                <span class="status-badge ${status === 'นิเทศแล้ว' ? 'done' : 'pending'}">${status}</span>
+                ${status === 'รอนิเทศ' ? `<button class="btn-sm" onclick="markDone('${s.student_id}')">นิเทศแล้ว</button>` : ''}
+                <button class="btn-sm" onclick="viewDocuments('${s.student_id}')">ตรวจงาน</button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+document.getElementById("searchInput").addEventListener("input", (e) => {
+    const query = e.target.value.toLowerCase();
+    const filtered = allStudents.filter(s =>
+        `${s.first_name} ${s.last_name}`.toLowerCase().includes(query)
+    );
+    updateStudentDisplay(filtered);
+});
+
+// กดนิเทศแล้ว
+async function markDone(studentId) {
+    try {
+        await authFetch(`http://127.0.0.1:8000/students/${studentId}/status`, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({status: "นิเทศแล้ว"})
+        });
+        await loadStudents();
+    } catch(err){ console.error(err); }
+}
+
+// แสดงเอกสาร student
+async function viewDocuments(studentId) {
+    try {
+        const res = await authFetch(`http://127.0.0.1:8000/documents/?student_id=${studentId}`);
+        if (!res) return;
+        const docs = await res.json();
+
+        const docList = document.getElementById("documentList");
+        docList.innerHTML = "";
+        if (docs.length === 0) {
+            docList.innerHTML = "<li>นักศึกษาไม่ได้ส่งเอกสาร</li>";
+        } else {
+            docs.forEach(d => {
+                const li = document.createElement("li");
+                li.innerHTML = `<a href="${d.file_url}" download="${d.title}">${d.title}</a>`;
+                docList.appendChild(li);
+            });
+        }
+
+        document.getElementById("documentModal").style.display = "block";
+    } catch(err){ console.error(err); }
+}
+
+// ปิดโมดอล
+function closeModal() {
+    document.getElementById("documentModal").style.display = "none";
+}
+
+loadStudents();
+</script>
+</body>
+</html>
